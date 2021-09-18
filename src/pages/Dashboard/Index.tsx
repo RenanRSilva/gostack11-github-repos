@@ -1,17 +1,44 @@
-import React, { useState } from 'react';
+import React, { useState, FormEvent } from 'react';
 import { FiChevronRight } from 'react-icons/fi';
 import api from '../../services/api'
 
 import logoImg from '../../assets/logo.svg'
 
-import { Title, Form, Repositories } from './styles';
+import { Title, Form, Repositories, Error } from './styles';
+
+interface Repository{
+  full_name: string;
+  description: string;
+  owner: {
+    login: string;
+    avatar_url: string;
+  };
+}
 
 const Dashboard: React.FC = () => {
   const [newRepo, setNewRepo] = useState('');
-  const [repositories, setRepostories] = useState([]);
+  const [inputError, setInputError] = useState('')
+  const [repositories, setRepositories] = useState<Repository[]>([]);
 
-  function handleAddRepository() {
-    console.log(newRepo)
+  async function handleAddRepository(
+    event: FormEvent<HTMLFormElement>,
+    ): Promise<void> {
+      event.preventDefault();
+
+    if (!newRepo) {
+      setInputError('Digite o autor/nome do repositório!!!!')
+    }
+
+    try {
+      const response = await api.get(`repos/${newRepo}`);
+
+      const repository = response.data;
+
+      setRepositories([...repositories, repository]);
+      setNewRepo('');
+    } catch (err) {
+      setInputError('Erro na busca por esse repositório')
+    }
   }
 
   return (
@@ -19,28 +46,33 @@ const Dashboard: React.FC = () => {
       <img src={logoImg} alt="Github Explorer" />
       <Title>Explore repositórios no Github</Title>
 
-      <Form>
-        <input
-        value={newRepo}
-        onChange={(e) => setNewRepo(e.target.value)}
-        placeholder="Digite o nome do repositório aqui"
-        />
+      <Form hasError={Boolean(inputError)} onSubmit={handleAddRepository}>
+          <input
+            value={newRepo}
+            onChange={(e) => setNewRepo(e.target.value)}
+            placeholder="Digite o nome do repositório aqui"
+          />
         <button type="submit">Pesquisar</button>
       </Form>
 
+      { inputError && <Error>{inputError}</Error>
+ }
+
       <Repositories>
-        <a href="teste">
-          <img
-          src=""
-          alt="RENAN URSO" />
-        <div>
-          <strong>Renan ursao</strong>
-          <p>Easy Peasy Highly scalable ReactJS & React Native Forms!</p>
-        </div>
+        {repositories.map(repository => (
+                  <a key={repository.full_name} href="teste">
+                  <img
+                  src={repository.owner.avatar_url}
+                  alt={repository.owner.login}
+                  />
+                <div>
+                  <strong>{repository.full_name}</strong>
+                  <p>{repository.description}</p>
+                </div>
+                <FiChevronRight size={20}/>
+                </a>
 
-        <FiChevronRight size={20}/>
-        </a>
-
+        ))}
       </Repositories>
     </>
     );
