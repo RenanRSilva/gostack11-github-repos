@@ -108,8 +108,5 @@ export const Repositories = styled.div`
       margin-left: auto;
       color: #cbcbd6;
     }
-
-
   }
-
 `;
